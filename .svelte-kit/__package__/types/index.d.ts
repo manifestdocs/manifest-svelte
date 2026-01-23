@@ -1,2 +1,0 @@
-export type { FeatureState, SessionStatus, TaskStatus, AgentType, Project, CreateProjectInput, UpdateProjectInput, ProjectDirectory, AddDirectoryInput, ProjectWithDirectories, Version, CreateVersionInput, UpdateVersionInput, Feature, CreateFeatureInput, UpdateFeatureInput, FeatureTreeNode, FeatureHistory, Session, CreateSessionInput, SessionResponse, SessionFeatureSummary, SessionStatusResponse, CompleteSessionInput, SessionCompletionResult, Task, CreateTaskInput, UpdateTaskInput, } from "./core.js";
-//# sourceMappingURL=index.d.ts.map
