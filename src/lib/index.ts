@@ -92,3 +92,31 @@ export type {
 
 // API Client
 export { ApiError, ManifestClient, createClient, type ManifestClientConfig } from "./api/index.js";
+
+// Commands
+export type {
+  CommandScope,
+  FeatureType,
+  CommandContext,
+  SlashCommand,
+  CommandPromptResult,
+} from "./commands/index.js";
+
+export {
+  acceptanceCriteriaCommand,
+  specificationCommand,
+  testScenariosCommand,
+  breakdownCommand,
+  implementationGuideCommand,
+  sharedContextCommand,
+  organizeCommand,
+  commands,
+  commandList,
+  getCommand,
+  getCommandsForContext,
+  matchCommand,
+  matchCommands,
+  parseCommand,
+  buildPromptWithCommand,
+  getMatchHighlights,
+} from "./commands/index.js";
