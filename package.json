@@ -29,6 +29,10 @@
       "types": "./dist/api/index.d.ts",
       "svelte": "./dist/api/index.js",
       "default": "./dist/api/index.js"
+    },
+    "./commands": {
+      "types": "./dist/commands/index.d.ts",
+      "default": "./dist/commands/index.js"
     }
   },
   "files": [

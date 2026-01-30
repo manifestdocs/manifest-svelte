@@ -20,6 +20,7 @@ function persistenceInstructions(ctx: CommandContext): string {
 		'After generating your response, call update_feature to save the results:',
 		`- feature_id: "${ctx.featureId}"`,
 		'- Set desired_details to the COMPLETE updated feature details (merge your additions with the existing content)',
+		'- Do NOT change the feature state — only set desired_details',
 		'This proposes changes for the user to review via the diff view.',
 	].join('\n');
 }
@@ -109,7 +110,7 @@ const ac: SlashCommand = {
 const specs: SlashCommand = {
 	name: 'specs',
 	label: 'BDD Specs',
-	description: 'Generate BDD scenarios from acceptance criteria',
+	description: 'Generate BDD scenarios from AC',
 	scope: 'leaf',
 	icon: 'test-tube',
 	relevance(ctx) {
