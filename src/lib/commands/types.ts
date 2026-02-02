@@ -5,8 +5,16 @@
  * or feature group is selected, and on the feature's current content.
  */
 
-/** Whether the command targets a single feature or a group */
-export type CommandScope = 'leaf' | 'group';
+/** Whether the command targets a single feature, a group, or version planning */
+export type CommandScope = 'leaf' | 'group' | 'version';
+
+/** Version summary for planning context */
+export interface VersionSummary {
+  id: string;
+  name: string;
+  featureCount: number;
+  implementedCount: number;
+}
 
 /** Context passed to commands for relevance scoring and prompt building */
 export interface CommandContext {
@@ -16,6 +24,16 @@ export interface CommandContext {
   projectId?: string;
   isLeaf: boolean;
   isProjectRoot?: boolean;
+  /** Version summaries for planning commands */
+  versions?: VersionSummary[];
+  /** Name of the next version to ship */
+  nextVersionName?: string;
+  /** Number of features not assigned to any version */
+  unassignedFeatureCount?: number;
+  /** Whether the chat is in the version/plan view */
+  isVersionView?: boolean;
+  /** Format for acceptance criteria output: checkbox (default) or gherkin */
+  acFormat?: 'checkbox' | 'gherkin';
 }
 
 /** A slash command definition */

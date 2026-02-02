@@ -7,7 +7,11 @@
 // Enums
 // ============================================================
 
-export type FeatureState = 'proposed' | 'in_progress' | 'implemented' | 'deprecated';
+export type FeatureState =
+  | 'proposed'
+  | 'in_progress'
+  | 'implemented'
+  | 'deprecated';
 export type SessionStatus = 'active' | 'completed' | 'failed';
 export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 export type AgentType = 'claude' | 'gemini' | 'codex';

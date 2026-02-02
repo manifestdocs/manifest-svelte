@@ -1,7 +1,7 @@
-import Root from "./version-selector.svelte";
+import Root from './version-selector.svelte';
 
 export {
-	Root,
-	//
-	Root as VersionSelector,
+  Root,
+  //
+  Root as VersionSelector,
 };

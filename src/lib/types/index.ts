@@ -33,4 +33,4 @@ export type {
   Task,
   CreateTaskInput,
   UpdateTaskInput,
-} from "./core.js";
+} from './core.js';

@@ -1,11 +1,11 @@
 // Utils
-export { cn } from "./utils/index.js";
+export { cn } from './utils/index.js';
 export type {
   WithoutChild,
   WithoutChildren,
   WithoutChildrenOrChild,
   WithElementRef,
-} from "./utils/index.js";
+} from './utils/index.js';
 
 // Components
 export {
@@ -50,7 +50,7 @@ export {
   VersionBadge,
   // VersionSelector
   VersionSelector,
-} from "./components/index.js";
+} from './components/index.js';
 
 // Types
 export type {
@@ -88,10 +88,15 @@ export type {
   Task,
   CreateTaskInput,
   UpdateTaskInput,
-} from "./types/index.js";
+} from './types/index.js';
 
 // API Client
-export { ApiError, ManifestClient, createClient, type ManifestClientConfig } from "./api/index.js";
+export {
+  ApiError,
+  ManifestClient,
+  createClient,
+  type ManifestClientConfig,
+} from './api/index.js';
 
 // Commands
 export type {
@@ -101,11 +106,12 @@ export type {
   ParsedCommand,
   CommandMatch,
   HighlightSegment,
-} from "./commands/index.js";
+  VersionSummary,
+} from './commands/index.js';
 export {
   commands,
   parseCommand,
   matchCommands,
   getMatchHighlights,
   buildPromptWithCommand,
-} from "./commands/index.js";
+} from './commands/index.js';

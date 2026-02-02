@@ -38,14 +38,6 @@ function hasAcceptanceCriteria(ctx: CommandContext): boolean {
   return /- \[[ x]\]/i.test(d) || /given\b.*\bwhen\b.*\bthen\b/is.test(d);
 }
 
-function hasBddSpecs(ctx: CommandContext): boolean {
-  const d = ctx.featureDetails ?? '';
-  return (
-    /\b(scenario|feature|background)\b/i.test(d) &&
-    /\b(given|when|then)\b/i.test(d)
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
@@ -53,10 +45,11 @@ function hasBddSpecs(ctx: CommandContext): boolean {
 const enhance: SlashCommand = {
   name: 'enhance',
   label: 'Enhance',
-  description: 'Flesh out a sparse feature description',
+  description: 'Expand a user story into detailed feature spec',
   scope: 'leaf',
   icon: 'sparkles',
   relevance(ctx) {
+    if (ctx.isVersionView) return 0;
     if (!ctx.isLeaf) return 0;
     const len = detailsLength(ctx);
     if (len < 50) return 95;
@@ -87,6 +80,7 @@ const ac: SlashCommand = {
   scope: 'leaf',
   icon: 'check-square',
   relevance(ctx) {
+    if (ctx.isVersionView) return 0;
     if (!ctx.isLeaf) return 0;
     if (hasAcceptanceCriteria(ctx)) return 50; // already has AC — offer refinement
     if (detailsLength(ctx) > 50) return 85; // has details but no AC
@@ -94,6 +88,24 @@ const ac: SlashCommand = {
   },
   buildSystemPrompt(ctx) {
     const hasAC = hasAcceptanceCriteria(ctx);
+    const isGherkin = ctx.acFormat === 'gherkin';
+    const formatInstructions = isGherkin
+      ? [
+          'Write acceptance criteria using Gherkin Scenario format:',
+          '',
+          '```gherkin',
+          `Feature: ${ctx.featureTitle}`,
+          '  Scenario: [descriptive name]',
+          '    Given [context]',
+          '    When [action]',
+          '    Then [expected outcome]',
+          '```',
+        ]
+      : [
+          'Write acceptance criteria using checkbox format:',
+          '- [ ] Given [context], When [action], Then [expected result]',
+        ];
+
     return [
       'You are a QA analyst writing acceptance criteria.',
       `Feature: "${ctx.featureTitle}"`,
@@ -101,49 +113,9 @@ const ac: SlashCommand = {
       '',
       hasAC
         ? 'Review and refine the existing acceptance criteria. Identify gaps, ambiguities, and missing edge cases.'
-        : 'Write acceptance criteria using checkbox format:',
-      hasAC
-        ? ''
-        : '- [ ] Given [context], When [action], Then [expected result]',
+        : formatInstructions.join('\n'),
       '',
       'Cover the happy path, error cases, and boundary conditions.',
-      persistenceInstructions(ctx),
-    ].join('\n');
-  },
-};
-
-const specs: SlashCommand = {
-  name: 'specs',
-  label: 'BDD Specs',
-  description: 'Generate BDD scenarios from AC',
-  scope: 'leaf',
-  icon: 'test-tube',
-  relevance(ctx) {
-    if (!ctx.isLeaf) return 0;
-    if (hasBddSpecs(ctx)) return 40; // already has specs
-    if (hasAcceptanceCriteria(ctx)) return 90; // has AC — natural next step
-    if (detailsLength(ctx) > 300) return 60; // detailed but no AC
-    return 20;
-  },
-  buildSystemPrompt(ctx) {
-    return [
-      'You are a BDD specialist writing Gherkin-style specifications.',
-      `Feature: "${ctx.featureTitle}"`,
-      ctx.featureDetails ? `Details:\n${ctx.featureDetails}` : '',
-      '',
-      hasBddSpecs(ctx)
-        ? 'Review the existing BDD scenarios. Add missing scenarios, improve clarity, and ensure coverage.'
-        : 'Write BDD scenarios in Gherkin format:',
-      '',
-      '```gherkin',
-      `Feature: ${ctx.featureTitle}`,
-      '  Scenario: [descriptive name]',
-      '    Given [context]',
-      '    When [action]',
-      '    Then [expected outcome]',
-      '```',
-      '',
-      'Cover happy paths, error paths, and edge cases.',
       persistenceInstructions(ctx),
     ].join('\n');
   },
@@ -156,6 +128,7 @@ const breakdown: SlashCommand = {
   scope: 'leaf',
   icon: 'git-branch',
   relevance(ctx) {
+    if (ctx.isVersionView) return 0;
     if (!ctx.isLeaf) return 0;
     const len = detailsLength(ctx);
     if (len > 500) return 85;
@@ -186,6 +159,7 @@ const plan: SlashCommand = {
   scope: 'leaf',
   icon: 'git-branch',
   relevance(ctx) {
+    if (ctx.isVersionView) return 0;
     if (!ctx.isProjectRoot || !ctx.isLeaf) return 0;
     if (detailsLength(ctx) > 50) return 95;
     return 0;
@@ -220,6 +194,7 @@ const organize: SlashCommand = {
   scope: 'group',
   icon: 'layers',
   relevance(ctx) {
+    if (ctx.isVersionView) return 0;
     if (ctx.isLeaf) return 0;
     return 85;
   },
@@ -245,6 +220,7 @@ const context: SlashCommand = {
   scope: 'group',
   icon: 'book-open',
   relevance(ctx) {
+    if (ctx.isVersionView) return 0;
     if (ctx.isLeaf) return 0;
     const len = detailsLength(ctx);
     if (len < 100) return 90; // sparse group — needs context
@@ -271,13 +247,227 @@ const context: SlashCommand = {
   },
 };
 
-/** All available slash commands */
+// ---------------------------------------------------------------------------
+// Version context helpers
+// ---------------------------------------------------------------------------
+
+function versionContextBlock(ctx: CommandContext): string {
+  if (!ctx.versions || ctx.versions.length === 0) return '';
+
+  const lines = ['## Version Overview', ''];
+  for (const v of ctx.versions) {
+    const pct =
+      v.featureCount > 0
+        ? Math.round((v.implementedCount / v.featureCount) * 100)
+        : 0;
+    lines.push(
+      `- **${v.name}**: ${v.implementedCount}/${v.featureCount} implemented (${pct}%)`,
+    );
+  }
+
+  if (ctx.unassignedFeatureCount !== undefined && ctx.unassignedFeatureCount > 0) {
+    lines.push(`- **Backlog**: ${ctx.unassignedFeatureCount} unassigned features`);
+  }
+
+  if (ctx.projectId) {
+    lines.push('', `Project ID: ${ctx.projectId}`);
+  }
+
+  return lines.join('\n');
+}
+
+function versionPersistenceInstructions(): string {
+  return [
+    '',
+    'After analysis, use Manifest MCP tools to make changes:',
+    '- set_feature_version to move features between versions',
+    '- update_feature to change priorities or details',
+    '- list_versions and find_features to gather more data if needed',
+    'Present your recommendations clearly before making changes.',
+  ].join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Version planning commands
+// ---------------------------------------------------------------------------
+
+const scope: SlashCommand = {
+  name: 'scope',
+  label: 'Scope Version',
+  description: 'Recommend features for the next version',
+  scope: 'version',
+  icon: 'target',
+  relevance(ctx) {
+    if (!ctx.isVersionView) return 0;
+    if ((ctx.unassignedFeatureCount ?? 0) > 0) return 90;
+    return 40;
+  },
+  buildSystemPrompt(ctx) {
+    return [
+      'You are a release manager helping scope the next version.',
+      ctx.nextVersionName
+        ? `The next version is **${ctx.nextVersionName}**.`
+        : '',
+      '',
+      versionContextBlock(ctx),
+      '',
+      'Recommend which backlog features should be included in the next version.',
+      'Consider:',
+      '- Feature dependencies (what must ship together)',
+      '- Spec completeness (features with detailed specs are more ready)',
+      '- Balanced scope (avoid overloading a single release)',
+      '',
+      'Use find_features to examine the backlog, then present recommendations.',
+      versionPersistenceInstructions(),
+    ].join('\n');
+  },
+};
+
+const readiness: SlashCommand = {
+  name: 'readiness',
+  label: 'Readiness Check',
+  description: 'Assess if a version is ready to ship',
+  scope: 'version',
+  icon: 'clipboard-check',
+  relevance(ctx) {
+    if (!ctx.isVersionView) return 0;
+    const next = ctx.versions?.find((v) => v.name === ctx.nextVersionName);
+    if (next && next.featureCount > 0) return 90;
+    return 30;
+  },
+  buildSystemPrompt(ctx) {
+    return [
+      'You are a release manager assessing version readiness.',
+      ctx.nextVersionName
+        ? `Evaluating version **${ctx.nextVersionName}**.`
+        : '',
+      '',
+      versionContextBlock(ctx),
+      '',
+      'Assess whether this version is ready to ship. Check:',
+      '- Feature completion: are all features implemented?',
+      '- Spec completeness: do features have acceptance criteria?',
+      '- Blockers: any features stuck in_progress or missing specs?',
+      '- Gaps: any obvious missing capabilities for this release?',
+      '',
+      'Use get_feature on each feature in the version to inspect their specs.',
+      'Give a clear ship/no-ship recommendation with specific blockers.',
+    ].join('\n');
+  },
+};
+
+const prioritize: SlashCommand = {
+  name: 'prioritize',
+  label: 'Prioritize Backlog',
+  description: 'Prioritize unassigned backlog features',
+  scope: 'version',
+  icon: 'sort-desc',
+  relevance(ctx) {
+    if (!ctx.isVersionView) return 0;
+    if ((ctx.unassignedFeatureCount ?? 0) > 2) return 85;
+    if ((ctx.unassignedFeatureCount ?? 0) > 0) return 60;
+    return 25;
+  },
+  buildSystemPrompt(ctx) {
+    return [
+      'You are a product manager prioritizing the backlog.',
+      '',
+      versionContextBlock(ctx),
+      '',
+      'Review the unassigned backlog features and recommend a priority ordering.',
+      'Consider:',
+      '- User value: which features matter most to users?',
+      '- Dependencies: which features unblock others?',
+      '- Effort vs. impact: quick wins vs. large investments',
+      '- Technical risk: identify features that need early investigation',
+      '',
+      'Use find_features to examine backlog features in detail.',
+      'Present a ranked list with brief justification for each position.',
+      versionPersistenceInstructions(),
+    ].join('\n');
+  },
+};
+
+const releaseNotes: SlashCommand = {
+  name: 'release-notes',
+  label: 'Release Notes',
+  description: 'Draft release notes for a version',
+  scope: 'version',
+  icon: 'file-text',
+  relevance(ctx) {
+    if (!ctx.isVersionView) return 0;
+    const next = ctx.versions?.find((v) => v.name === ctx.nextVersionName);
+    if (next && next.implementedCount > 0) return 85;
+    return 20;
+  },
+  buildSystemPrompt(ctx) {
+    return [
+      'You are a technical writer drafting release notes.',
+      ctx.nextVersionName
+        ? `Drafting notes for version **${ctx.nextVersionName}**.`
+        : '',
+      '',
+      versionContextBlock(ctx),
+      '',
+      'Draft release notes for this version. For each implemented feature:',
+      '- Write a user-facing summary (1-2 sentences)',
+      '- Group related features under clear headings',
+      '- Highlight breaking changes or migration steps if applicable',
+      '',
+      'Use get_feature on each feature to read their specs and history.',
+      'Write in a clear, professional tone suitable for a changelog.',
+    ].join('\n');
+  },
+};
+
+const balance: SlashCommand = {
+  name: 'balance',
+  label: 'Balance Versions',
+  description: 'Redistribute features across versions',
+  scope: 'version',
+  icon: 'layers',
+  relevance(ctx) {
+    if (!ctx.isVersionView) return 0;
+    if (!ctx.versions || ctx.versions.length < 2) return 0;
+    // Check for imbalanced versions
+    const counts = ctx.versions.map((v) => v.featureCount);
+    const max = Math.max(...counts);
+    const min = Math.min(...counts);
+    if (max - min > 3) return 85;
+    if (max - min > 1) return 50;
+    return 25;
+  },
+  buildSystemPrompt(ctx) {
+    return [
+      'You are a release planner balancing work across versions.',
+      '',
+      versionContextBlock(ctx),
+      '',
+      'Analyze the feature distribution across versions and recommend rebalancing.',
+      'Consider:',
+      '- Even workload distribution across releases',
+      '- Feature dependencies (keep related features together)',
+      '- Priority: higher-priority features in earlier versions',
+      '- Scope creep: flag versions that are too large',
+      '',
+      'Use find_features and list_versions for detailed data.',
+      'Present specific move recommendations (which feature to which version).',
+      versionPersistenceInstructions(),
+    ].join('\n');
+  },
+};
+
+/** All available slash commands (alphabetical) */
 export const commands: SlashCommand[] = [
-  enhance,
   ac,
-  specs,
+  balance,
   breakdown,
-  plan,
-  organize,
   context,
+  enhance,
+  organize,
+  plan,
+  prioritize,
+  readiness,
+  releaseNotes,
+  scope,
 ];

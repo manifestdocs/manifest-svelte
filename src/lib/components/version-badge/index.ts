@@ -1,7 +1,7 @@
-import Root from "./version-badge.svelte";
+import Root from './version-badge.svelte';
 
 export {
-	Root,
-	//
-	Root as VersionBadge,
+  Root,
+  //
+  Root as VersionBadge,
 };

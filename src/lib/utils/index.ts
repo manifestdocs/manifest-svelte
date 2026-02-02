@@ -1,7 +1,7 @@
-export { cn } from "./cn.js";
+export { cn } from './cn.js';
 export type {
   WithoutChild,
   WithoutChildren,
   WithoutChildrenOrChild,
   WithElementRef,
-} from "./types.js";
+} from './types.js';
