@@ -50,7 +50,8 @@ const enhance: SlashCommand = {
   icon: 'sparkles',
   relevance(ctx) {
     if (ctx.isVersionView) return 0;
-    if (!ctx.isLeaf) return 0;
+    // Project root features use /plan, not leaf commands
+    if (!ctx.isLeaf || ctx.isProjectRoot) return 0;
     const len = detailsLength(ctx);
     if (len < 50) return 95;
     if (len < 200) return 75;
@@ -81,7 +82,8 @@ const ac: SlashCommand = {
   icon: 'check-square',
   relevance(ctx) {
     if (ctx.isVersionView) return 0;
-    if (!ctx.isLeaf) return 0;
+    // Project root features use /plan, not leaf commands
+    if (!ctx.isLeaf || ctx.isProjectRoot) return 0;
     if (hasAcceptanceCriteria(ctx)) return 50; // already has AC — offer refinement
     if (detailsLength(ctx) > 50) return 85; // has details but no AC
     return 30; // sparse — AC is premature
@@ -129,7 +131,8 @@ const breakdown: SlashCommand = {
   icon: 'git-branch',
   relevance(ctx) {
     if (ctx.isVersionView) return 0;
-    if (!ctx.isLeaf) return 0;
+    // Project root features use /plan, not leaf commands
+    if (!ctx.isLeaf || ctx.isProjectRoot) return 0;
     const len = detailsLength(ctx);
     if (len > 500) return 85;
     if (len > 300) return 70;
@@ -323,39 +326,6 @@ const scope: SlashCommand = {
   },
 };
 
-const readiness: SlashCommand = {
-  name: 'readiness',
-  label: 'Readiness Check',
-  description: 'Assess if a version is ready to ship',
-  scope: 'version',
-  icon: 'clipboard-check',
-  relevance(ctx) {
-    if (!ctx.isVersionView) return 0;
-    const next = ctx.versions?.find((v) => v.name === ctx.nextVersionName);
-    if (next && next.featureCount > 0) return 90;
-    return 30;
-  },
-  buildSystemPrompt(ctx) {
-    return [
-      'You are a release manager assessing version readiness.',
-      ctx.nextVersionName
-        ? `Evaluating version **${ctx.nextVersionName}**.`
-        : '',
-      '',
-      versionContextBlock(ctx),
-      '',
-      'Assess whether this version is ready to ship. Check:',
-      '- Feature completion: are all features implemented?',
-      '- Spec completeness: do features have acceptance criteria?',
-      '- Blockers: any features stuck in_progress or missing specs?',
-      '- Gaps: any obvious missing capabilities for this release?',
-      '',
-      'Use get_feature on each feature in the version to inspect their specs.',
-      'Give a clear ship/no-ship recommendation with specific blockers.',
-    ].join('\n');
-  },
-};
-
 const prioritize: SlashCommand = {
   name: 'prioritize',
   label: 'Prioritize Backlog',
@@ -384,38 +354,6 @@ const prioritize: SlashCommand = {
       'Use find_features to examine backlog features in detail.',
       'Present a ranked list with brief justification for each position.',
       versionPersistenceInstructions(),
-    ].join('\n');
-  },
-};
-
-const releaseNotes: SlashCommand = {
-  name: 'release-notes',
-  label: 'Release Notes',
-  description: 'Draft release notes for a version',
-  scope: 'version',
-  icon: 'file-text',
-  relevance(ctx) {
-    if (!ctx.isVersionView) return 0;
-    const next = ctx.versions?.find((v) => v.name === ctx.nextVersionName);
-    if (next && next.implementedCount > 0) return 85;
-    return 20;
-  },
-  buildSystemPrompt(ctx) {
-    return [
-      'You are a technical writer drafting release notes.',
-      ctx.nextVersionName
-        ? `Drafting notes for version **${ctx.nextVersionName}**.`
-        : '',
-      '',
-      versionContextBlock(ctx),
-      '',
-      'Draft release notes for this version. For each implemented feature:',
-      '- Write a user-facing summary (1-2 sentences)',
-      '- Group related features under clear headings',
-      '- Highlight breaking changes or migration steps if applicable',
-      '',
-      'Use get_feature on each feature to read their specs and history.',
-      'Write in a clear, professional tone suitable for a changelog.',
     ].join('\n');
   },
 };
@@ -467,7 +405,5 @@ export const commands: SlashCommand[] = [
   organize,
   plan,
   prioritize,
-  readiness,
-  releaseNotes,
   scope,
 ];
