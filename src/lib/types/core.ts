@@ -9,6 +9,7 @@
 
 export type FeatureState =
   | 'proposed'
+  | 'blocked'
   | 'in_progress'
   | 'implemented'
   | 'deprecated';
@@ -23,6 +24,7 @@ export type AgentType = 'claude' | 'gemini' | 'codex';
 export interface Project {
   id: string;
   name: string;
+  key_prefix: string;
   description?: string | null;
   instructions?: string | null;
   current_version_id?: string | null;
@@ -103,6 +105,7 @@ export interface Feature {
   desired_details?: string | null;
   state: FeatureState;
   priority: number;
+  feature_number?: number | null;
   target_version_id?: string | null;
   created_at: string;
   updated_at: string;
@@ -126,6 +129,7 @@ export interface UpdateFeatureInput {
   state?: FeatureState;
   priority?: number;
   target_version_id?: string | null;
+  blocked_by?: string[];
 }
 
 export interface FeatureTreeNode extends Feature {
