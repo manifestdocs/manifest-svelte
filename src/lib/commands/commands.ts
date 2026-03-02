@@ -90,23 +90,6 @@ const ac: SlashCommand = {
   },
   buildSystemPrompt(ctx) {
     const hasAC = hasAcceptanceCriteria(ctx);
-    const isGherkin = ctx.acFormat === 'gherkin';
-    const formatInstructions = isGherkin
-      ? [
-          'Write acceptance criteria using Gherkin Scenario format:',
-          '',
-          '```gherkin',
-          `Feature: ${ctx.featureTitle}`,
-          '  Scenario: [descriptive name]',
-          '    Given [context]',
-          '    When [action]',
-          '    Then [expected outcome]',
-          '```',
-        ]
-      : [
-          'Write acceptance criteria using checkbox format:',
-          '- [ ] Given [context], When [action], Then [expected result]',
-        ];
 
     return [
       'You are a QA analyst writing acceptance criteria.',
@@ -115,7 +98,7 @@ const ac: SlashCommand = {
       '',
       hasAC
         ? 'Review and refine the existing acceptance criteria. Identify gaps, ambiguities, and missing edge cases.'
-        : formatInstructions.join('\n'),
+        : 'Write acceptance criteria using checkbox format:\n- [ ] Given [context], When [action], Then [expected result]',
       '',
       'Cover the happy path, error cases, and boundary conditions.',
       persistenceInstructions(ctx),

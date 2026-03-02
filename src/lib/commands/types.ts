@@ -32,8 +32,6 @@ export interface CommandContext {
   unassignedFeatureCount?: number;
   /** Whether the chat is in the version/plan view */
   isVersionView?: boolean;
-  /** Format for acceptance criteria output: checkbox (default) or gherkin */
-  acFormat?: 'checkbox' | 'gherkin';
 }
 
 /** A slash command definition */
