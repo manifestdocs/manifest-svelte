@@ -36,7 +36,7 @@ export interface ManifestClientConfig {
   baseUrl?: string;
 }
 
-const DEFAULT_BASE_URL = 'http://localhost:17010';
+const DEFAULT_BASE_URL = 'http://localhost:4242';
 
 export class ManifestClient {
   private baseUrl: string;
